@@ -38,9 +38,9 @@ def parse_args():
 
 def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: str):
     maze = Maze(maze_file)
-    point = Scoreboard(team_name, server_url)
+    #point = Scoreboard(team_name, server_url)
     # point = ScoreboardFake("your team name", "data/fakeUID.csv") # for local testing
-    interface = BTInterface(port=bt_port)
+    #interface = BTInterface(port=bt_port)
     # TODO : Initialize necessary variables
 
     if mode == "0":
@@ -50,6 +50,17 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
     elif mode == "1":
         log.info("Mode 1: Self-testing mode.")
         # TODO: You can write your code to test specific function.
+        # for i in range(1,len(maze.node_dict)+1):
+        #     print( maze.node_dict[i].get_index() )
+        
+        # bfs_path = maze.BFS( maze.get_start_point() )
+        # for i in range(len(bfs_path)):
+        #     print(bfs_path[i].get_index())
+        # print("=====================================")
+        bfs_2_path = maze.BFS_2( maze.get_node_dict()[1], maze.get_node_dict()[48] )
+        action_list = maze.getActions(bfs_2_path)
+        # print(action_list)
+        print(maze.actions_to_str(action_list))
 
     else:
         log.error("Invalid mode")
