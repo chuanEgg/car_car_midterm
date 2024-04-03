@@ -3,6 +3,8 @@ from typing import Optional
 
 from BT import Bluetooth
 
+from maze import Action
+
 log = logging.getLogger(__name__)
 
 # hint: You may design additional functions to execute the input command,
@@ -28,8 +30,20 @@ class BTInterface:
     def get_UID(self):
         return self.bt.serial_read_byte()
 
-    def send_action(self, dirc):
+    def send_action(self, dirc : Action):
         # TODO : send the action to car
+        if(dirc == Action.ADVANCE):
+            dirc = b'a'
+        elif(dirc == Action.TURN_LEFT):
+            dirc = b'l'
+        elif(dirc == Action.TURN_RIGHT):
+            dirc = b'r'
+        elif(dirc == Action.U_TURN):
+            dirc = b'u'
+        elif(dirc == Action.HALT):
+            dirc = b's'
+            
+        self.bt.serial_write_bytes(dirc)
         return
 
     def end_process(self):
