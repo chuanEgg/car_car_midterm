@@ -6,7 +6,11 @@ import pandas
 import requests
 import socketio
 
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 
 
 class ScoreboardFake:
@@ -114,12 +118,12 @@ if __name__ == "__main__":
     import time
 
     try:
-        scoreboard = Scoreboard("TeamName2", "http://140.112.175.18:5000")
-        # myScoreboard = ScoreboardFake("TeamName","data/fakeUID.csv")
-        time.sleep(6)
-        scoreboard.add_UID("61C9931C")
-        scoreboard.add_UID("D1874019")
-        scoreboard.add_UID("12346578")
+        # scoreboard = Scoreboard("TeamName2", "http://140.112.175.18:5000")
+        scoreboard = ScoreboardFake("TeamName","data/fakeUID.csv")
+        time.sleep(3)
+        scoreboard.add_UID("C5F875CF")
+        # scoreboard.add_UID("D1874019")
+        # scoreboard.add_UID("12346578")
         log.info("score:", scoreboard.get_current_score())
     except KeyboardInterrupt:
         sys.exit(1)
