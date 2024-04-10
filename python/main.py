@@ -46,6 +46,13 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
     if mode == "0":
         log.info("Mode 0: For treasure-hunting")
         # TODO : for treasure-hunting, which encourages you to hunt as many scores as possible
+        bluetooth = BTInterface(port=bt_port).start()
+        moving_list = [Action.ADVANCE, Action.TURN_RIGHT,Action.ADVANCE,Action.U_TURN,Action.ADVANCE, Action.TURN_LEFT]
+        for command in moving_list :
+            if( bluetooth.get_UID() != 0 ):
+                bluetooth.send_action(command)
+                print("UID: ", bluetooth.get_UID(), "\n")
+        
 
     elif mode == "1":
         log.info("Mode 1: Self-testing mode.")
