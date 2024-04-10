@@ -1,44 +1,92 @@
-/***************************************************************************/
-// File			  [track.h]
-// Author		  [Erik Kuo]
-// Synopsis		[Code used for tracking]
-// Functions  [MotorWriting, MotorInverter, tracking]
-// Modify		  [2020/03/27 Erik Kuo]
-/***************************************************************************/
+class IR_sensor{
+  int pin_num ,value;
 
-/*if you have no idea how to start*/
-/*check out what you have learned from week 1 & 6*/
-/*feel free to add your own function for convenience*/
+  public:
+    IR_sensor(int num):pin_num(num){
+      pinMode(pin_num, INPUT); 
+    }
 
-/*===========================import variable===========================*/
-int extern _Tp;
-/*===========================import variable===========================*/
+    int is_on_line(){
+      return digitalRead(pin_num)>0;
+    }
+};
 
-// Write the voltage to motor.
-void MotorWriting(double vL, double vR) {
-    // TODO: use TB6612 to control motor voltage & direction
-}  // MotorWriting
+class Motor{
+  int AIN1, AIN2, BIN1, BIN2, PWMA, PWMB, STBY;
+  double wL2 = -2, wL1 = -1, wM = 0, wR1 = 1, wR2 = 2, diff = 1;
 
-// Handle negative motor_PWMR value.
-void MotorInverter(int motor, bool& dir) {
-    // Hint: the value of motor_PWMR must between 0~255, cannot write negative value.
-}  // MotorInverter
+  public:
+    Motor(int AIN1, int AIN2, int  BIN1, int BIN2, int PWMA, int PWMB, int STBY){
+      this->AIN1 = AIN1;
+      this->AIN2 = AIN2;
+      this->BIN1 = BIN1;
+      this->BIN2 = BIN2;
+      this->PWMA = PWMA;
+      this->PWMB = PWMB;
+      this->STBY = STBY;
 
-// P/PID control Tracking
-void tracking(int l2, int l1, int m0, int r1, int r2) {
-    // TODO: find your own parameters!
-    double _w0;  //
-    double _w1;  //
-    double _w2;  //
-    double _Kp;  // p term parameter
-    double _Kd;  // d term parameter (optional)
-    double _Ki;  // i term parameter (optional) (Hint: 不要調太大)
-    double error = l2 * _w2 + l1 * _w1 + m0 * _w0 + r1 * (-_w1) + r2 * (-_w2);
-    double vR, vL;  // 馬達左右轉速原始值(從PID control 計算出來)。Between -255 to 255.
-    double adj_R = 1, adj_L = 1;  // 馬達轉速修正係數。MotorWriting(_Tp,_Tp)如果歪掉就要用參數修正。
+      pinMode(AIN1,OUTPUT);
+      pinMode(AIN2,OUTPUT);
+      pinMode(BIN1,OUTPUT);
+      pinMode(BIN2,OUTPUT);
+      pinMode(PWMA,OUTPUT);
+      pinMode(PWMB,OUTPUT);
+      pinMode(STBY,OUTPUT);
+    }
 
-    // TODO: complete your P/PID tracking code
+    void motorWrite(double vL, double vR){
+      vL = vL>255 ? 255 : vL;
+      vL = vL<-255 ? -255 : vL;
+      vR = vR>255 ? 255 : vR;
+      vR = vR<-255 ? -255 : vR;
+      vR *= 0.9*diff;
+      vL *= diff;
+      if(vL>=0){
+        digitalWrite(STBY, HIGH);
+        digitalWrite(AIN1, LOW);
+        digitalWrite(AIN2, HIGH);
+        analogWrite(PWMA,vL);
+      }
+      else{
+        digitalWrite(STBY, HIGH);
+        digitalWrite(AIN1, HIGH);
+        digitalWrite(AIN2, LOW);
+        analogWrite(PWMA,vL*-1);
+      }
+      if(vR>=0){
+        digitalWrite(STBY, HIGH);
+        digitalWrite(BIN1, LOW);
+        digitalWrite(BIN2, HIGH);
+        analogWrite(PWMB,vR);
+      }
+      else{
+        digitalWrite(STBY, HIGH);
+        digitalWrite(BIN1, HIGH);
+        digitalWrite(BIN2, LOW);
+        analogWrite(PWMB,vR*-1);
+      }
+    }
+    void stop(){
+      digitalWrite(STBY, LOW);
+    }
 
-    // end TODO
-    MotorWriting(adj_L * vL, adj_R * vR);
-}  // tracking
+    double tracking(double lastError, bool* bSensors){
+      int L2 = bSensors[0];
+      int L1 = bSensors[1];
+      int M = bSensors[2];
+      int R1 = bSensors[3];
+      int R2 = bSensors[4];
+      double error = 0.0;
+      if(L2||L1||M||R1||R2){
+        error = (wL2*L2 + wL1*L1 + wM*M + wR1*R1 + wR2*R2)/(L1+L2+M+R1+R2);
+        // error = (L1+L2+M+R1+R2)*1.0;
+      }
+      double Kp = 100, Tp = 255, Kd = 10;
+      // Kd is not tuned yet
+      double correction = Kp*error + Kd*(error-lastError);
+      double vL = Tp - correction;
+      double vR = Tp + correction;
+      motorWrite(vL, vR);
+      return error;
+    }
+};
