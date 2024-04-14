@@ -6,14 +6,14 @@ class IR_sensor{
       pinMode(pin_num, INPUT); 
     }
 
-    int is_on_line(){
+    bool is_on_line(){
       return digitalRead(pin_num)>0;
     }
 };
 
 class Motor{
   int AIN1, AIN2, BIN1, BIN2, PWMA, PWMB, STBY;
-  double wL2 = -2, wL1 = -1, wM = 0, wR1 = 1, wR2 = 2, diff = 1;
+  double wL2 = -2, wL1 = -1, wM = 0, wR1 = 1, wR2 = 2, diff = 0.6;
 
   public:
     Motor(int AIN1, int AIN2, int  BIN1, int BIN2, int PWMA, int PWMB, int STBY){
@@ -86,7 +86,19 @@ class Motor{
       double correction = Kp*error + Kd*(error-lastError);
       double vL = Tp - correction;
       double vR = Tp + correction;
+      if(L1 && L2 && M && R1 && R2) error = -1;
       motorWrite(vL, vR);
       return error;
     }
+
+    // [blocking] move for t ms with vL, vR
+    void move(double t, double vL, double vR){
+      while(t >= 0){
+        motorWrite(vL, vR);
+        t -= 10;
+        delay(100);
+      }
+    }
+
+    void moveTill(bool* ir, int ir_size, double vL, double vR);
 };

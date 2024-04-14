@@ -12,6 +12,7 @@ class Bluetooth{
     // read data from buffer
     String read_data(){
       String data = "";
+      // Serial1.flush();
       if(Serial1.available()){
         data = Serial1.readString();
       }

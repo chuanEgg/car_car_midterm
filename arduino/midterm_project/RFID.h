@@ -15,27 +15,10 @@ class RFID{
     String dump_byte_array(byte *buffer, byte bufferSize) {
       String res = "";
       for (byte i = 0; i < bufferSize; i++) {
-        res += (buffer[i] < 0x10 ? " 0" : " ");
         res += String(buffer[i], HEX);
-        // Serial.print(buffer[i] < 0x10 ? " 0" : " ");
-        // Serial.print(buffer[i], HEX);
       }
-      res = HexString2ASCIIString(res);
+      res.toUpperCase();
       return res;
-    }
-
-    String HexString2ASCIIString(String hexstring) {
-      String temp = "", sub = "", result;
-      char buf[3];
-      for(int i = 0; i < hexstring.length(); i += 2){
-        sub = hexstring.substring(i, i+2);
-        sub.toCharArray(buf, 3);
-        char b = (char)strtol(buf, 0, 16);
-        if(b == '\0')
-          break;
-        temp += b;
-      }
-      return temp;
     }
 
     String get_UID(){
@@ -50,7 +33,7 @@ class RFID{
         return UID;
       }
       else{
-        return "\0";
+        return "NONE";
       }
     }
 };
