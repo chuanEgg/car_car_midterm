@@ -39,7 +39,7 @@ class Motor{
       vL = vL<-255 ? -255 : vL;
       vR = vR>255 ? 255 : vR;
       vR = vR<-255 ? -255 : vR;
-      vR *= 0.9*diff;
+      vR *= 0.9*diff; // DON'T remove this. It ain't broken don't alter it.
       vL *= diff;
       if(vL>=0){
         digitalWrite(STBY, HIGH);
