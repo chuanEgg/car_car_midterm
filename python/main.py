@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 TEAM_NAME = "YOUR_TEAM_NAME"
 SERVER_URL = "http://140.112.175.18:5000/"
 MAZE_FILE = "data/small_maze.csv"
-BT_PORT = ""
+BT_PORT = "COM5"
 
 
 def parse_args():
@@ -37,21 +37,31 @@ def parse_args():
 
 
 def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: str):
-    maze = Maze(maze_file)
+    #maze = Maze(maze_file)
     #point = Scoreboard(team_name, server_url)
-    # point = ScoreboardFake("your team name", "data/fakeUID.csv") # for local testing
+    point = ScoreboardFake("your team name", "data/fakeUID.csv") # for local testing
     #interface = BTInterface(port=bt_port)
     # TODO : Initialize necessary variables
 
     if mode == "0":
         log.info("Mode 0: For treasure-hunting")
         # TODO : for treasure-hunting, which encourages you to hunt as many scores as possible
-        bluetooth = BTInterface(port=bt_port).start()
-        moving_list = [Action.ADVANCE, Action.TURN_RIGHT,Action.ADVANCE,Action.U_TURN,Action.ADVANCE, Action.TURN_LEFT]
-        for command in moving_list :
-            if( bluetooth.get_UID() != 0 ):
-                bluetooth.send_action(command)
-                print("UID: ", bluetooth.get_UID(), "\n")
+        bluetooth = BTInterface(port=bt_port)
+        bluetooth.start()
+        moving_list = [Action.START,Action.ADVANCE,Action.U_TURN,Action.TURN_LEFT,Action.U_TURN,Action.ADVANCE,Action.U_TURN,Action.TURN_RIGHT,Action.HALT]
+        
+        step = 0
+        bluetooth.send_action(moving_list[step])
+        step += 1
+        while(step<len(moving_list)):
+            UID = bluetooth.get_UID()
+            if(UID):
+                bluetooth.send_action(moving_list[step])
+                print(UID)
+                point.add_UID(UID)
+                step+=1
+        bluetooth.end_process()
+        print("Score:",point.get_current_score())
         
 
     elif mode == "1":
@@ -63,11 +73,18 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
         # bfs_path = maze.BFS( maze.get_start_point() )
         # for i in range(len(bfs_path)):
         #     print(bfs_path[i].get_index())
-        # print("=====================================")
-        bfs_2_path = maze.BFS_2( maze.get_node_dict()[1], maze.get_node_dict()[48] )
-        action_list = maze.getActions(bfs_2_path)
-        # print(action_list)
-        print(maze.actions_to_str(action_list))
+        # # print("=====================================")
+        
+        # bfs_2_path = maze.BFS_2( maze.get_node_dict()[1], maze.get_node_dict()[48] )
+        # action_list = maze.getActions(bfs_2_path)
+        # print(maze.actions_to_str(action_list))
+        
+        point.add_UID("C5F875CF")
+        point.add_UID("F5816AD0")
+        # scoreboard.add_UID("D1874019")
+        # scoreboard.add_UID("12346578")
+        #log.info("score:", point.get_current_score())
+        print("Score:",point.get_current_score())
 
     else:
         log.error("Invalid mode")
