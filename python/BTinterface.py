@@ -1,4 +1,4 @@
-import logging
+import logging,time
 from typing import Optional
 
 from BT import Bluetooth
@@ -25,13 +25,16 @@ class BTInterface:
 
     def start(self):
         input("Press enter to start.")
-        self.bt.serial_write_string("s")
+        # self.bt.serial_write_string("s")
+        # time.sleep(1)
 
     def get_UID(self):
-        return self.bt.serial_read_byte()
+        UID = self.bt.serial_read_byte()
+        return self.process_UID(UID)
 
     def send_action(self, dirc : Action):
         # TODO : send the action to car
+        
         if(dirc == Action.ADVANCE):
             dirc = b'a'
         elif(dirc == Action.TURN_LEFT):
@@ -40,15 +43,28 @@ class BTInterface:
             dirc = b'r'
         elif(dirc == Action.U_TURN):
             dirc = b'u'
-        elif(dirc == Action.HALT):
+        elif(dirc == Action.START):
             dirc = b's'
+        elif(dirc == Action.HALT):
+            dirc = b'e'
             
         self.bt.serial_write_bytes(dirc)
         return
 
     def end_process(self):
-        self.bt.serial_write_string("e")
+        # time.sleep(2)
+        # self.bt.serial_write_string("e")
+        # time.sleep(2)
         self.bt.disconnect()
+        
+        
+    def process_UID(self,unprocessed_UID : str):
+        UID = ""
+        if(unprocessed_UID):
+            for i in range(1,int(len(unprocessed_UID)/2)-1):
+                partial_integer = int(( "0x" + unprocessed_UID[i*2:i*2+2]),16)
+                UID += chr(partial_integer)
+        return UID
 
 
 if __name__ == "__main__":
