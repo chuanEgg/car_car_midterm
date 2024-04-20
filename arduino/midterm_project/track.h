@@ -13,7 +13,7 @@ class IR_sensor{
 
 class Motor{
   int AIN1, AIN2, BIN1, BIN2, PWMA, PWMB, STBY;
-  double wL2 = -2, wL1 = -1, wM = 0, wR1 = 1, wR2 = 2, diff = 0.6;
+  double wL2 = -2, wL1 = -1, wM = 0, wR1 = 1, wR2 = 2, Ldiff = 1, Rdiff = 1;
 
   public:
     Motor(int AIN1, int AIN2, int  BIN1, int BIN2, int PWMA, int PWMB, int STBY){
@@ -39,8 +39,8 @@ class Motor{
       vL = vL<-255 ? -255 : vL;
       vR = vR>255 ? 255 : vR;
       vR = vR<-255 ? -255 : vR;
-      vR *= 0.9*diff; // DON'T remove this. It ain't broken don't alter it.
-      vL *= diff;
+      vR *= Rdiff;
+      vL *= Ldiff;
       if(vL>=0){
         digitalWrite(STBY, HIGH);
         digitalWrite(AIN1, LOW);
