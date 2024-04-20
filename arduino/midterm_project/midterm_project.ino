@@ -1,108 +1,214 @@
-/***************************************************************************/
-// File       [final_project.ino]
-// Author     [Erik Kuo]
-// Synopsis   [Code for managing main process]
-// Functions  [setup, loop, Search_Mode, Hault_Mode, SetState]
-// Modify     [2020/03/27 Erik Kuo]
-/***************************************************************************/
-
-#define DEBUG  // debug flag
-
-// for RFID
-#include <MFRC522.h>
-#include <SPI.h>
-
-/*===========================define pin & create module object================================*/
-// BlueTooth
-// BT connect to Serial1 (Hardware Serial)
-// Mega               HC05
-// Pin  (Function)    Pin
-// 18    TX       ->  RX
-// 19    RX       <-  TX
-// TB6612, 請按照自己車上的接線寫入腳位(左右不一定要跟註解寫的一樣)
-// TODO: 請將腳位寫入下方
-#define MotorR_I1 0     // 定義 A1 接腳（右）
-#define MotorR_I2 0     // 定義 A2 接腳（右）
-#define MotorR_PWMR 0  // 定義 ENA (PWM調速) 接腳
-#define MotorL_I3 0     // 定義 B1 接腳（左）
-#define MotorL_I4 0     // 定義 B2 接腳（左）
-#define MotorL_PWML 0  // 定義 ENB (PWM調速) 接腳
-// 循線模組, 請按照自己車上的接線寫入腳位
-#define IRpin_LL 0
-#define IRpin_L 0
-#define IRpin_M 0
-#define IRpin_R 0
-#define IRpin_RR 0
-// RFID, 請按照自己車上的接線寫入腳位
-#define RST_PIN 0                 // 讀卡機的重置腳位
-#define SS_PIN 0                  // 晶片選擇腳位
-MFRC522 mfrc522(SS_PIN, RST_PIN);  // 建立MFRC522物件
-/*===========================define pin & create module object===========================*/
-
-/*============setup============*/
-void setup() {
-    // bluetooth initialization
-    Serial1.begin(9600);
-    // Serial window
-    Serial.begin(9600);
-    // RFID initial
-    SPI.begin();
-    mfrc522.PCD_Init();
-    // TB6612 pin
-    pinMode(MotorR_I1, OUTPUT);
-    pinMode(MotorR_I2, OUTPUT);
-    pinMode(MotorL_I3, OUTPUT);
-    pinMode(MotorL_I4, OUTPUT);
-    pinMode(MotorL_PWML, OUTPUT);
-    pinMode(MotorR_PWMR, OUTPUT);
-    // tracking pin
-    pinMode(IRpin_LL, INPUT);
-    pinMode(IRpin_L, INPUT);
-    pinMode(IRpin_M, INPUT);
-    pinMode(IRpin_R, INPUT);
-    pinMode(IRpin_RR, INPUT);
-#ifdef DEBUG
-    Serial.println("Start!");
-#endif
-}
-/*============setup============*/
-
-/*=====Import header files=====*/
-#include "RFID.h"
 #include "bluetooth.h"
+#include "RFID.h"
 #include "node.h"
-#include "track.h"
-/*=====Import header files=====*/
 
-/*===========================initialize variables===========================*/
-int l2 = 0, l1 = 0, m0 = 0, r1 = 0, r2 = 0;  // 紅外線模組的讀值(0->white,1->black)
-int _Tp = 90;                                // set your own value for motor power
-bool state = false;     // set state to false to halt the car, set state to true to activate the car
-BT_CMD _cmd = NOTHING;  // enum for bluetooth message, reference in bluetooth.h line 2
-/*===========================initialize variables===========================*/
+#define pin_PWMA 12
+#define pin_PWMB 13
+#define pin_AIN1 2
+#define pin_AIN2 3
+#define pin_BIN1 4
+#define pin_BIN2 5
+#define pin_STBY 6
+#define pin_IR1 32
+#define pin_IR2 34
+#define pin_IR3 36
+#define pin_IR4 38
+#define pin_IR5 40
+#define pin_RFID_SS 53
+#define pin_RFID_RST 9
+#define pin_BT_RX 18
+#define pin_BT_TX 19
 
-/*===========================declare function prototypes===========================*/
-void Search();    // search graph
-void SetState();  // switch the state
-/*===========================declare function prototypes===========================*/
+Bluetooth * bt;
+IR_sensor * sensors[5];
+RFID * rfid;
+Motor * motor;
 
-/*===========================define function===========================*/
-void loop() {
-    if (!state)
-        MotorWriting(0, 0);
-    else
-        Search();
-    SetState();
+enum status {
+  START,
+  ADVANCING,
+  GOING_STRAIGHT_THROUGH,
+  TURNING_LEFT,
+  TURNING_RIGHT,
+  U_TURNING,
+  END
+};
+
+enum position{
+  PATH,
+  NODE
+};
+
+double lastError = 0.0;
+unsigned long loop_timer = 0;
+unsigned long last_UID = 0;
+unsigned long last_enter_node_time = 0;
+status current_status = START;
+status next_status = END;
+position current_position = PATH;
+bool sensors_read[5];
+
+void setup() {
+  Serial.begin(9600);
+  SPI.begin();
+  sensors[0] = new IR_sensor(pin_IR1);
+  sensors[1] = new IR_sensor(pin_IR2);
+  sensors[2] = new IR_sensor(pin_IR3);
+  sensors[3] = new IR_sensor(pin_IR4);
+  sensors[4] = new IR_sensor(pin_IR5);
+  rfid = new RFID(pin_RFID_SS, pin_RFID_RST);
+  motor = new Motor(pin_AIN1, pin_AIN2, pin_BIN1, pin_BIN2, pin_PWMA, pin_PWMB, pin_STBY);
+  bt = new Bluetooth();
+
+  for(int i = 0 ; i < 5 ; i++){
+    sensors_read[i] = false;
+  }
 }
 
-void SetState() {
-    // TODO:
-    // 1. Get command from bluetooth
-    // 2. Change state if need
-}
 
-void Search() {
-    // TODO: let your car search graph(maze) according to bluetooth command from computer(python
-    // code)
+status temp = START; // for debugging
+
+// void loop(){
+//     for(int i = 0 ; i < 5 ; i++){
+//       Serial.print(sensors[i]->is_on_line() == true);
+//       Serial.print(" ");
+//     }
+//     Serial.println();
+// }
+// void loop(){
+//   unsigned long UID = rfid->get_UID();
+//   if(UID!=0){
+//     byte byteArray[4];
+//     rfid->UID_to_byteArray(byteArray, UID);
+//     bt->send_data(byteArray,4);
+//     Serial.println(UID,HEX);
+//   }
+// }
+
+
+void loop(){
+
+  // char* UID_string;
+  // UID_string = new char[15];
+  // if(rfid->get_UID_string(UID_string)!=0){
+  //   Serial.println(UID_string);
+  // }
+  if(current_status != temp){
+    Serial.println(current_status);
+    temp = current_status;
+  }
+
+  // Serial.println(current_status);
+  switch(current_status){
+    case START:
+      if(bt->available() && bt->read_data() == 's'){ //if bluetooth recieved start command, switch to advancing
+        current_status = ADVANCING;
+        last_enter_node_time = millis();
+        motor->motorWrite(120,120);
+        delay(200);
+      }
+      break;
+      
+
+    case ADVANCING:
+
+      while(true){
+        //tracking and changing state
+        if(loop_timer%2 == 0){
+          char sensor_sum = 0;
+          for(int i = 0 ; i < 5 ; i++){ sensors_read[i] = sensors[i]->is_on_line(); sensor_sum += sensors_read[i];}
+          lastError = motor->tracking(lastError, sensors_read);
+
+          if(current_position != NODE && sensor_sum >= 4 &&  millis() - 700 > last_enter_node_time){
+            byte byteArray[1];
+            byteArray[0] = 'n';
+            bt->send_data(byteArray,1);
+            current_position = NODE;
+            current_status = next_status;
+            last_enter_node_time = millis();
+            break;
+          }
+          else if(current_position == NODE && sensor_sum <= 3 ){
+            current_position = PATH;
+            current_status = ADVANCING;
+          }
+        }
+
+        // for UID, check every 10 loop
+        if( loop_timer %10 == 0){
+          byte byteArray[4];
+          unsigned long UID = rfid->get_UID();
+          if( UID != 0 && UID != last_UID){
+            last_UID = UID;
+            rfid->UID_to_byteArray(byteArray, UID);
+            bt->send_data(byteArray,4);
+            Serial.println(UID,HEX);
+          }
+        }
+
+        //for bt, check every loop to change command in time
+        if(bt->available()){
+          char cmd = bt->read_data();
+          Serial.println(cmd);
+          switch(cmd){
+            case 'a':
+              next_status = GOING_STRAIGHT_THROUGH;
+              break;
+            case 'l':
+              next_status = TURNING_LEFT;
+              break;
+            case 'r':
+              next_status = TURNING_RIGHT;
+              break;
+            case 'u':
+              next_status = U_TURNING;
+              break;
+            case 'e':
+              next_status = END;
+              break;
+          }
+        }
+
+        loop_timer += 1;
+      }
+      break;
+
+    case GOING_STRAIGHT_THROUGH:
+      motor->motorWrite(255,255);
+      delay(500);
+      current_status = ADVANCING;
+      next_status = ADVANCING;
+      break;
+
+    case TURNING_LEFT:
+      motor->motorWrite(255,100);
+      delay(700);
+      current_status = ADVANCING;
+      next_status = ADVANCING;
+      break;
+    case TURNING_RIGHT:
+      motor->motorWrite(80,255);
+      delay(700);
+      current_status = ADVANCING;
+      next_status = ADVANCING;
+      break;
+    case U_TURNING:
+      motor->motorWrite(150,-150);
+      delay(800);
+      current_status = ADVANCING;
+      next_status = ADVANCING;
+      break;
+    case END:
+      motor->motorWrite(0,0);
+      // if(bt->available() && bt->read_data() == 's'){ //if bluetooth recieved start command, switch to advancing
+      //   current_status = ADVANCING;
+      //   next_status = END;
+      //   last_enter_node_time = millis();
+      // }
+      break;
+
+    default:
+      break;
+  }
+  
 }
-/*===========================define function===========================*/
