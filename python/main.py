@@ -18,7 +18,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # TODO : Fill in the following information
-TEAM_NAME = "YOUR_TEAM_NAME"
+TEAM_NAME = "Hello"
 SERVER_URL = "http://140.112.175.18:5000/"
 MAZE_FILE = "data/small_maze.csv"
 BT_PORT = "COM5"
@@ -37,9 +37,9 @@ def parse_args():
 
 
 def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: str):
-    #maze = Maze(maze_file)
-    #point = Scoreboard(team_name, server_url)
-    point = ScoreboardFake("your team name", "data/fakeUID.csv") # for local testing
+    maze = Maze(maze_file)
+    point = Scoreboard(team_name, server_url)
+    #point = ScoreboardFake("your team name", "data/fakeUID.csv") # for local testing
     #interface = BTInterface(port=bt_port)
     # TODO : Initialize necessary variables
 
@@ -48,18 +48,32 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
         # TODO : for treasure-hunting, which encourages you to hunt as many scores as possible
         bluetooth = BTInterface(port=bt_port)
         bluetooth.start()
-        moving_list = [Action.START,Action.ADVANCE,Action.U_TURN,Action.TURN_LEFT,Action.U_TURN,Action.ADVANCE,Action.U_TURN,Action.TURN_RIGHT,Action.HALT]
-        
-        step = 0
-        bluetooth.send_action(moving_list[step])
-        step += 1
+        print("bt Start")
+        #moving_list = [Action.START,Action.ADVANCE,Action.U_TURN,Action.TURN_LEFT,Action.U_TURN,Action.ADVANCE,Action.U_TURN,Action.TURN_RIGHT,Action.HALT]
+        #moving_list = [Action.START,Action.U_TURN,Action.HALT]
+        # moving_list = [Action.START,Action.TURN_RIGHT,Action.ADVANCE,Action.U_TURN,Action.TURN_RIGHT,Action.ADVANCE,Action.U_TURN,Action.TURN_RIGHT,Action.TURN_LEFT,Action.TURN_RIGHT,Action.U_TURN,Action.TURN_RIGHT,Action.HALT]
+        moving_list = maze.solveMaze()
+        print(moving_list)
+        bluetooth.send_action(moving_list[0])
+        time.sleep(0.3)
+        bluetooth.send_action(moving_list[1])
+        step = 2
         while(step<len(moving_list)):
-            UID = bluetooth.get_UID()
-            if(UID):
+            data = bluetooth.get_data()
+            if(len(data) == 2):
                 bluetooth.send_action(moving_list[step])
-                print(UID)
-                point.add_UID(UID)
+                print("Step sent : ",moving_list[step])
                 step+=1
+            elif(len(data)>2 and len(data) <= 8): 
+                print(data)
+                point.add_UID(data)
+            elif(len(data)>8):
+                bluetooth.send_action(moving_list[step])
+                step+=1
+                data = data[0:-4]
+                print(data)
+                point.add_UID(data)
+                       
         bluetooth.end_process()
         print("Score:",point.get_current_score())
         
@@ -75,17 +89,21 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
         #     print(bfs_path[i].get_index())
         # # print("=====================================")
         
-        # bfs_2_path = maze.BFS_2( maze.get_node_dict()[1], maze.get_node_dict()[48] )
-        # action_list = maze.getActions(bfs_2_path)
-        # print(maze.actions_to_str(action_list))
+        moving_list = maze.solveMaze()
+        print(moving_list)
         
-        point.add_UID("C5F875CF")
-        point.add_UID("F5816AD0")
-        # scoreboard.add_UID("D1874019")
-        # scoreboard.add_UID("12346578")
-        #log.info("score:", point.get_current_score())
-        print("Score:",point.get_current_score())
-
+    elif mode == "2":
+        bfs_2_path = maze.BFS_2( maze.get_node_dict()[1], maze.get_node_dict()[4] )
+        bfs_2_path.append(maze.get_node_dict()[3])
+        bfs_2_path.append(maze.get_node_dict()[5])
+        bfs_2_path.append(maze.get_node_dict()[6])
+        print(bfs_2_path)
+        
+        action_list = maze.getActions(bfs_2_path)
+        print(action_list)
+        print(maze.actions_to_str(action_list))
+        
+       
     else:
         log.error("Invalid mode")
         sys.exit(1)
