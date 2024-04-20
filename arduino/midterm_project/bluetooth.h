@@ -10,18 +10,25 @@ class Bluetooth{
     }
 
     // read data from buffer
-    String read_data(){
-      String data = "";
-      // Serial1.flush();
-      if(Serial1.available()){
-        data = Serial1.readString();
-      }
-      return data;
+    char read_data(){
+      return (char)Serial1.read();
     }
 
     // send data to bluetooth module and send it
     void send_data(String data){
       Serial1.write(data.c_str());
-      Serial1.write("\n");
+      Serial1.write('\n');
+    }
+
+    void send_data(char* data){
+      Serial1.write(data);
+      Serial1.write('\n');
+    }
+
+    void send_data(byte* byteArray, int size){
+      for(int i = 0 ; i < size ; i++){
+        Serial1.write(byteArray[i]);
+      }
+      Serial1.write('\n');
     }
 };
