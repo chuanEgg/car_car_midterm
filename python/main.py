@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 # TODO : Fill in the following information
 TEAM_NAME = "Hello"
 SERVER_URL = "http://140.112.175.18:5000/"
-MAZE_FILE = "data/small_maze.csv"
+MAZE_FILE = "data/small_maze3.csv"
 BT_PORT = "COM5"
 
 
@@ -38,8 +38,8 @@ def parse_args():
 
 def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: str):
     maze = Maze(maze_file)
-    point = Scoreboard(team_name, server_url)
-    #point = ScoreboardFake("your team name", "data/fakeUID.csv") # for local testing
+    #point = Scoreboard(team_name, server_url)
+    point = ScoreboardFake("your team name", "data/fakeUID.csv") # for local testing
     #interface = BTInterface(port=bt_port)
     # TODO : Initialize necessary variables
 
@@ -73,7 +73,11 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
                 data = data[0:-4]
                 print(data)
                 point.add_UID(data)
-                       
+        time.sleep(3)
+        data = bluetooth.get_data()
+        if(len(data)>2 and len(data) <= 8):
+            print(data)
+            point.add_UID(data)
         bluetooth.end_process()
         print("Score:",point.get_current_score())
         
