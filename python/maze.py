@@ -234,6 +234,21 @@ class Maze:
             i = i + 1
         # log.info(cmds)
         return cmds
+    def actions_to_char(self, actions):
+        # cmd = "fbrls"
+        cmds = []
+        for action in actions:
+            if action == Action.ADVANCE:
+                cmds.append("f")
+            elif action == Action.U_TURN:
+                cmds.append("b")
+            elif action == Action.TURN_RIGHT:
+                cmds.append("r")
+            elif action == Action.TURN_LEFT:
+                cmds.append("l")
+            elif action == Action.HALT:
+                cmds.append("s")
+        return cmds
 
     def actions_to_actions(self, actions):
         cmds = []
@@ -259,7 +274,7 @@ class Maze:
     def findRoot(self):
         roots = []
         for node in self.node_dict.values():
-            if len(node.get_successors()) == 1 and node != self.get_start_point():
+            if len(node.get_successors()) == 1:
                 roots.append(node)
         return roots
     
@@ -275,39 +290,44 @@ class Maze:
             for j in range(1, n+1):
                 if i == j: continue
                 path = self.BFS_2(self.node_dict[i], self.node_dict[j])
-                action = self.actions_to_str(self.getActions(path))
+                action = self.actions_to_char(self.getActions(path))
+                # print(path, self.getActions(path))
                 temp_dis = 0
+                # print(i, j, end=' ')
                 for k in action:
+                    # print(k, end=' ')
                     temp_dis += self.t[k] 
+                # print()
                 dis[i-1][j-1] = temp_dis
         return dis
     
     def solveMaze(self):
         roots = self.findRoot()
         start = self.get_start_point()
+        end = self.get_end_point()
         dis = self.getDis()
         all_perm = self.all_permutations(roots)
         # print(dis)
         min_dis = math.inf
         min_path = []
         for perm in all_perm:
+            if perm[0] != start or perm[-1] != end:
+                continue
             path = [start]
             for root in perm:
                 path += self.BFS_2(path[-1], root)[1:]
-            # for i in perm:
-            #     print(i.get_index(), end=' ')
-            # print()
-            # for i in path:
-            #     print(i.get_index(), end=' ')
-            # print()
             total_dis = 0
             for i in range(len(path)-1):
                 total_dis += dis[path[i].get_index()-1][path[i+1].get_index()-1]
+
+                # one must u turn from a root to another
+                if path[i] in roots:
+                    total_dis += self.t['b']
             if total_dis < min_dis:
                 min_dis = total_dis
                 min_path = path
         
-        print(min_dis)
+        # print(min_dis)
         for i in min_path:
             print(i.get_index(), end=' ')
         print()
@@ -316,6 +336,76 @@ class Maze:
         # print(actions)
         actions.insert(0,Action.START)
         actions.append(Action.HALT)
+        actions_str = self.actions_to_char(actions)
+        res = 0
+        for i in actions_str:
+            res += self.t[i]
+        print(f"total distant: {res}")
+        return actions
+    
+    def solveMaze_2(self):
+        roots = self.findRoot()
+        start = self.get_start_point()
+        end = self.get_end_point()
+        dis = self.getDis()
+        n = len(roots)
+        idx = {}
+        for i in range(n):
+            # print(roots[i].get_index(), end=' ')
+            idx[roots[i].get_index()] = i
+        # print()
+        dp = [[math.inf for x in range(1 << n)] for y in range(n)]
+        dp[idx[start.get_index()]][1 << (idx[start.get_index()])] = 0
+        par = [[-1 for x in range(1 << n)] for y in range(n)]
+
+        # print(dis)
+        for mask in range (2,1 << n):
+            for j in range (0, n):
+                if not (mask & (1 << j)):
+                    continue
+                for i in range (1,n):
+                    # (list(mydict.keys())[list(mydict.values()).index(16)])
+                    x = (list(idx.keys())[list(idx.values()).index(i)])
+                    y = (list(idx.keys())[list(idx.values()).index(j)])
+                    temp = dp[j][mask ^ (1 << i)] + dis[x-1][y-1]
+                    if temp < dp[i][mask]:
+                        dp[i][mask] = temp
+                        par[i][mask] = j
+
+        cur_node_idx = idx[end.get_index()]
+        mask = (1 << n) - 1
+        path = []
+        # for i in range(n):
+        #     print(i)
+        #     for mask in range(1 << n):
+        #         print(bin(mask), dp[i][mask])
+        # print(len(par))
+        while cur_node_idx != -1:
+            cur_node = (list(idx.keys())[list(idx.values()).index(cur_node_idx)])
+            # print(cur_node, cur_node_idx, bin(mask))
+            path.append(cur_node)
+            temp = par[cur_node_idx][mask]
+            # print(cur_node_idx)
+            if cur_node_idx != -1:
+                mask ^= (1 << (cur_node_idx))
+                cur_node_idx = temp
+
+        path.reverse()
+        # print(path)
+        path_node = [start]
+        for i in range(1, len(path)):
+            path_node += self.BFS_2(path_node[-1], self.node_dict[path[i]])[1:]
+        for i in path_node:
+            print(i.get_index(), end=' ')
+        print()
+        actions = self.getActions(path_node)
+        actions.insert(0,Action.START)
+        actions.append(Action.HALT)
+        actions_str = self.actions_to_char(actions)
+        res = 0
+        for i in actions_str:
+            res += self.t[i]
+        print(f"total distant: {res}")
         return actions
         
     def strategy(self, node: Node):

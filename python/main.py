@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 # TODO : Fill in the following information
 TEAM_NAME = "Hello"
 SERVER_URL = "http://140.112.175.18:5000/"
-MAZE_FILE = "data/small_maze3.csv"
+MAZE_FILE = "data/maze_55.csv"
 BT_PORT = "COM5"
 
 
@@ -106,6 +106,18 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
         action_list = maze.getActions(bfs_2_path)
         print(action_list)
         print(maze.actions_to_str(action_list))
+
+    elif mode == "3":
+        start = time.time()
+        print("\n=====================================")
+        maze.solveMaze_2()
+        end = time.time()
+        print("Time using DP:",end-start)
+        start = time.time()
+        print("\n=====================================")
+        maze.solveMaze()
+        end = time.time()
+        print("Time using brute force:",end-start)
         
        
     else:
