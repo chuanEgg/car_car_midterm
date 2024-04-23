@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 # TODO : Fill in the following information
 TEAM_NAME = "Hello"
 SERVER_URL = "http://140.112.175.18:5000/"
-MAZE_FILE = "data/maze_55.csv"
+MAZE_FILE = "data/maze_86.csv"
 BT_PORT = "COM5"
 
 

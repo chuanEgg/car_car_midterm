@@ -303,8 +303,8 @@ class Maze:
     
     def solveMaze(self):
         roots = self.findRoot()
-        start = self.get_start_point()
-        end = self.get_end_point()
+        start = roots[0]
+        end = roots[-1]
         dis = self.getDis()
         all_perm = self.all_permutations(roots)
         # print(dis)
@@ -345,8 +345,8 @@ class Maze:
     
     def solveMaze_2(self):
         roots = self.findRoot()
-        start = self.get_start_point()
-        end = self.get_end_point()
+        start = roots[0]
+        end = roots[-1]
         dis = self.getDis()
         n = len(roots)
         idx = {}
@@ -354,6 +354,7 @@ class Maze:
             # print(roots[i].get_index(), end=' ')
             idx[roots[i].get_index()] = i
         # print()
+        # print(idx)
         dp = [[math.inf for x in range(1 << n)] for y in range(n)]
         dp[idx[start.get_index()]][1 << (idx[start.get_index()])] = 0
         par = [[-1 for x in range(1 << n)] for y in range(n)]
