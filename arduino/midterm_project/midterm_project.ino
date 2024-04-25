@@ -80,7 +80,7 @@ status temp = START; // for debugging
 //   if(UID!=0){
 //     byte byteArray[4];
 //     rfid->UID_to_byteArray(byteArray, UID);
-//     bt->send_data(byteArray,4);
+//     // bt->send_data(byteArray,4);
 //     Serial.println(UID,HEX);
 //   }
 // }
@@ -114,12 +114,12 @@ void loop(){
 
       while(true){
         //tracking and changing state
-        if(loop_timer%2 == 0){
+        if(loop_timer){
           char sensor_sum = 0;
           for(int i = 0 ; i < 5 ; i++){ sensors_read[i] = sensors[i]->is_on_line(); sensor_sum += sensors_read[i];}
           lastError = motor->tracking(lastError, sensors_read);
 
-          if(current_position != NODE && sensor_sum >= 4 &&  millis() - 700 > last_enter_node_time){
+          if(current_position != NODE && sensor_sum >= 4 &&  millis() - 600 > last_enter_node_time){
             byte byteArray[1];
             byteArray[0] = 'n';
             bt->send_data(byteArray,1);
@@ -134,8 +134,8 @@ void loop(){
           }
         }
 
-        // for UID, check every 10 loop
-        if( loop_timer %10 == 0){
+        // for UID, check every n loop
+        if( loop_timer %1 == 0){
           byte byteArray[4];
           unsigned long UID = rfid->get_UID();
           if( UID != 0 && UID != last_UID){
@@ -144,28 +144,29 @@ void loop(){
             bt->send_data(byteArray,4);
             Serial.println(UID,HEX);
           }
-        }
+        
 
-        //for bt, check every loop to change command in time
-        if(bt->available()){
-          char cmd = bt->read_data();
-          Serial.println(cmd);
-          switch(cmd){
-            case 'a':
-              next_status = GOING_STRAIGHT_THROUGH;
-              break;
-            case 'l':
-              next_status = TURNING_LEFT;
-              break;
-            case 'r':
-              next_status = TURNING_RIGHT;
-              break;
-            case 'u':
-              next_status = U_TURNING;
-              break;
-            case 'e':
-              next_status = END;
-              break;
+          //for bt, check every loop to change command in time
+          if(bt->available()){
+            char cmd = bt->read_data();
+            Serial.println(cmd);
+            switch(cmd){
+              case 'a':
+                next_status = GOING_STRAIGHT_THROUGH;
+                break;
+              case 'l':
+                next_status = TURNING_LEFT;
+                break;
+              case 'r':
+                next_status = TURNING_RIGHT;
+                break;
+              case 'u':
+                next_status = U_TURNING;
+                break;
+              case 'e':
+                next_status = END;
+                break;
+            }
           }
         }
 
@@ -174,7 +175,7 @@ void loop(){
       break;
 
     case GOING_STRAIGHT_THROUGH:
-      motor->motorWrite(255,255);
+      motor->motorWrite(230,255);
       delay(500);
       current_status = ADVANCING;
       next_status = ADVANCING;
@@ -182,19 +183,19 @@ void loop(){
 
     case TURNING_LEFT:
       motor->motorWrite(255,100);
-      delay(700);
+      delay(800);
       current_status = ADVANCING;
       next_status = ADVANCING;
       break;
     case TURNING_RIGHT:
-      motor->motorWrite(80,255);
-      delay(700);
+      motor->motorWrite(90,255);
+      delay(850);
       current_status = ADVANCING;
       next_status = ADVANCING;
       break;
     case U_TURNING:
       motor->motorWrite(150,-150);
-      delay(800);
+      delay(790);
       current_status = ADVANCING;
       next_status = ADVANCING;
       break;
@@ -212,3 +213,10 @@ void loop(){
   }
   
 }
+
+
+
+
+
+
+
