@@ -93,10 +93,10 @@ void loop(){
   // if(rfid->get_UID_string(UID_string)!=0){
   //   Serial.println(UID_string);
   // }
-  if(current_status != temp){
-    Serial.println(current_status);
-    temp = current_status;
-  }
+  // if(current_status != temp){
+  //   Serial.println(current_status);
+  //   temp = current_status;
+  // }
 
   // Serial.println(current_status);
   switch(current_status){
@@ -142,14 +142,14 @@ void loop(){
             last_UID = UID;
             rfid->UID_to_byteArray(byteArray, UID);
             bt->send_data(byteArray,4);
-            Serial.println(UID,HEX);
+            // Serial.println(UID,HEX);
           }
         
 
           //for bt, check every loop to change command in time
           if(bt->available()){
             char cmd = bt->read_data();
-            Serial.println(cmd);
+            // Serial.println(cmd);
             switch(cmd){
               case 'a':
                 next_status = GOING_STRAIGHT_THROUGH;
