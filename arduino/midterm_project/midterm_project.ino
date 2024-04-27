@@ -136,13 +136,21 @@ void loop(){
 
         // for UID, check every n loop
         if( loop_timer %1 == 0){
-          byte byteArray[4];
+          byte byteArray[6];
           unsigned long UID = rfid->get_UID();
           if( UID != 0 && UID != last_UID){
+            // when getting UID, get next move without touching the "node"
             last_UID = UID;
             rfid->UID_to_byteArray(byteArray, UID);
-            bt->send_data(byteArray,4);
+            byteArray[4] = '\n';
+            byteArray[5] = 'n';
+            bt->send_data(byteArray,6);
             // Serial.println(UID,HEX);
+            
+            current_position = NODE;
+            current_status = next_status;
+            last_enter_node_time = millis();
+            break;
           }
         
 
@@ -201,11 +209,13 @@ void loop(){
       break;
     case END:
       motor->motorWrite(0,0);
-      // if(bt->available() && bt->read_data() == 's'){ //if bluetooth recieved start command, switch to advancing
-      //   current_status = ADVANCING;
-      //   next_status = END;
-      //   last_enter_node_time = millis();
-      // }
+      if(bt->available() && bt->read_data() == 's'){ //if bluetooth recieved start command, switch to advancing
+        current_status = ADVANCING;
+        next_status = END;
+        motor->motorWrite(120,120);
+        delay(200);
+        last_enter_node_time = millis();
+      }
       break;
 
     default:
