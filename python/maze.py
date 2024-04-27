@@ -334,7 +334,7 @@ class Maze:
         actions = self.getActions(min_path)
         # cmds = self.actions_to_str(actions)
         # print(actions)
-        actions.insert(0,Action.START)
+        actions[0]=Action.START
         actions.append(Action.HALT)
         actions_str = self.actions_to_char(actions)
         res = 0
@@ -343,16 +343,22 @@ class Maze:
         print(f"total distant: {res}")
         return actions
     
-    def solveMaze_2(self):
+    def solveMaze_2(self,root_idx_start, root_idx_end):
         roots = self.findRoot()
-        start = roots[0]
-        end = roots[-1]
+        start = roots[root_idx_start]
+        end = roots[root_idx_end]
         dis = self.getDis()
         n = len(roots)
         idx = {}
+        idx[start.get_index()] = 0
+        idx[end.get_index()] = n-1
+        temp = 1
         for i in range(n):
             # print(roots[i].get_index(), end=' ')
-            idx[roots[i].get_index()] = i
+            if roots[i] == start or roots[i] == end:
+                continue
+            idx[roots[i].get_index()] = temp
+            temp += 1
         # print()
         # print(idx)
         dp = [[math.inf for x in range(1 << n)] for y in range(n)]
@@ -400,14 +406,30 @@ class Maze:
             print(i.get_index(), end=' ')
         print()
         actions = self.getActions(path_node)
-        actions.insert(0,Action.START)
+        actions[0]=Action.START
         actions.append(Action.HALT)
         actions_str = self.actions_to_char(actions)
         res = 0
         for i in actions_str:
             res += self.t[i]
-        print(f"total distant: {res}")
+        # print(f"total distant: {res}")
+        return [res,actions]
+        
+        
+    def solveMaze_2_edit(self):
+        roots = self.findRoot()
+        start_root_idx = 2
+        min_dist = 100000
+        actions = []
+        for i in range(len(roots)):
+            if(start_root_idx != i):
+                temp_dist,temp_actions = self.solveMaze_2(start_root_idx,i)
+                if(temp_dist < min_dist):
+                    min_dist = temp_dist
+                    actions = temp_actions
+        print(min_dist)
         return actions
+        
         
     def strategy(self, node: Node):
         return self.BFS(node)
