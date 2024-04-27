@@ -9,7 +9,7 @@ import pandas
 
 from BTinterface import BTInterface
 from maze import Action, Maze
-from score import Scoreboard, ScoreboardFake
+from score import Scoreboard, ScoreboardFake, ScoreboardServer
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -18,9 +18,12 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # TODO : Fill in the following information
-TEAM_NAME = "Hello"
+TEAM_NAME = "很好笑欸"
 SERVER_URL = "http://140.112.175.18:5000/"
-MAZE_FILE = "data/maze_86.csv"
+# MAZE_FILE = "data/big_maze_112.csv"
+MAZE_FILE = "data/medium_maze.csv"
+# MAZE_FILE = "data/small_maze3.csv"
+# MAZE_FILE = "data/cross_maze.csv"
 BT_PORT = "COM5"
 
 
@@ -39,6 +42,7 @@ def parse_args():
 def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: str):
     maze = Maze(maze_file)
     #point = Scoreboard(team_name, server_url)
+    # point = ScoreboardServer(team_name, server_url)
     point = ScoreboardFake("your team name", "data/fakeUID.csv") # for local testing
     #interface = BTInterface(port=bt_port)
     # TODO : Initialize necessary variables
@@ -48,11 +52,12 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
         # TODO : for treasure-hunting, which encourages you to hunt as many scores as possible
         bluetooth = BTInterface(port=bt_port)
         bluetooth.start()
+        #point = ScoreboardServer(team_name, server_url)
         print("bt Start")
         #moving_list = [Action.START,Action.ADVANCE,Action.U_TURN,Action.TURN_LEFT,Action.U_TURN,Action.ADVANCE,Action.U_TURN,Action.TURN_RIGHT,Action.HALT]
         #moving_list = [Action.START,Action.U_TURN,Action.HALT]
         # moving_list = [Action.START,Action.TURN_RIGHT,Action.ADVANCE,Action.U_TURN,Action.TURN_RIGHT,Action.ADVANCE,Action.U_TURN,Action.TURN_RIGHT,Action.TURN_LEFT,Action.TURN_RIGHT,Action.U_TURN,Action.TURN_RIGHT,Action.HALT]
-        moving_list = maze.solveMaze()
+        moving_list = maze.solveMaze_2_edit()
         print(moving_list)
         bluetooth.send_action(moving_list[0])
         time.sleep(0.3)
@@ -65,21 +70,35 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
                 print("Step sent : ",moving_list[step])
                 step+=1
             elif(len(data)>2 and len(data) <= 8): 
-                print(data)
-                point.add_UID(data)
+                try:
+                    point.add_UID(data)
+                    print(data)
+                except Exception as e:
+                    print("Error",e)
             elif(len(data)>8):
+                try:
+                    data = data[0:-4]
+                    point.add_UID(data)
+                    print(data)
+                except Exception as e:
+                    print("Error",e)
                 bluetooth.send_action(moving_list[step])
                 step+=1
-                data = data[0:-4]
-                print(data)
+        
+        while(True):
+            data = bluetooth.get_data()
+            if(len(data)>2 and len(data) <= 8):
                 point.add_UID(data)
-        time.sleep(3)
-        data = bluetooth.get_data()
-        if(len(data)>2 and len(data) <= 8):
-            print(data)
-            point.add_UID(data)
+                print(data)
+                break
+            elif(len(data)>8):
+                data = data[0:-4]
+                point.add_UID(data)
+                print(data)
+                break
         bluetooth.end_process()
         print("Score:",point.get_current_score())
+        
         
 
     elif mode == "1":
@@ -93,7 +112,7 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
         #     print(bfs_path[i].get_index())
         # # print("=====================================")
         
-        moving_list = maze.solveMaze()
+        moving_list = maze.solveMaze_2_edit()
         print(moving_list)
         
     elif mode == "2":
@@ -106,18 +125,6 @@ def main(mode: int, bt_port: str, team_name: str, server_url: str, maze_file: st
         action_list = maze.getActions(bfs_2_path)
         print(action_list)
         print(maze.actions_to_str(action_list))
-
-    elif mode == "3":
-        start = time.time()
-        print("\n=====================================")
-        maze.solveMaze_2()
-        end = time.time()
-        print("Time using DP:",end-start)
-        start = time.time()
-        print("\n=====================================")
-        maze.solveMaze()
-        end = time.time()
-        print("Time using brute force:",end-start)
         
        
     else:
