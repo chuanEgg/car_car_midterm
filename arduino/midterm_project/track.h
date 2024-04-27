@@ -81,7 +81,7 @@ class Motor{
         error = (wL2*L2 + wL1*L1 + wM*M + wR1*R1 + wR2*R2)/(L1+L2+M+R1+R2);
         // error = (L1+L2+M+R1+R2)*1.0;
       }
-      double Kp = 100, Tp = 255, Kd = 10;
+      double Kp = 140, Tp = 255, Kd = 10;
       // Kd is not tuned yet
       double correction = Kp*error + Kd*(error-lastError);
       double vL = Tp - correction;
