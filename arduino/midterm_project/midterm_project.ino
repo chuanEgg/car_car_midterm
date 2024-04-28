@@ -24,29 +24,32 @@ IR_sensor * sensors[5];
 RFID * rfid;
 Motor * motor;
 
+//status to represent the current state of the car
 enum status {
-  START,
-  ADVANCING,
-  GOING_STRAIGHT_THROUGH,
-  TURNING_LEFT,
-  TURNING_RIGHT,
-  U_TURNING,
-  END
+  START, //initial state
+  ADVANCING, //car is advancing on road
+  GOING_STRAIGHT_THROUGH, //car is going straight through the node
+  TURNING_LEFT, //car is turning left at the node
+  TURNING_RIGHT, //car is turning right at the node
+  U_TURNING, //car is making a U-turn at the node
+  END //car is at the end of the road and halts
 };
 
+//position to represent the current position of the car
 enum position{
-  PATH,
-  NODE
+  PATH, //car is on the path
+  NODE //car is at the node
 };
 
-double lastError = 0.0;
-unsigned long loop_timer = 0;
-unsigned long last_UID = 0;
-unsigned long last_enter_node_time = 0;
-status current_status = START;
-status next_status = END;
-position current_position = PATH;
-bool sensors_read[5];
+double lastError = 0.0; //for tracking
+unsigned long loop_timer = 0; //to count the number of loops
+unsigned long last_UID = 0; //to avoid sending the same UID multiple times
+unsigned long last_enter_node_time = 0; //to record the time when the car enters the node to prevent from multiple enter into the same node
+status last_turn = TURNING_LEFT; //to record the last turn direction for correcting the direction of U-turn
+status current_status = START; //to record the current status of the car
+status next_status = END; //to record the next status of the car
+position current_position = PATH; //to record the current position of the car
+bool sensors_read[5]; //to record the reading of the sensors
 
 void setup() {
   Serial.begin(9600);
@@ -136,7 +139,7 @@ void loop(){
 
         // for UID, check every n loop
         if( loop_timer %1 == 0){
-          byte byteArray[6];
+          byte byteArray[6];//index 0~3 for UID, index 4 for '\n'(for separation), index 5 for 'n'(to inform python for next step)
           unsigned long UID = rfid->get_UID();
           if( UID != 0 && UID != last_UID){
             // when getting UID, get next move without touching the "node"
@@ -192,18 +195,29 @@ void loop(){
     case TURNING_LEFT:
       motor->motorWrite(255,100);
       delay(800);
+      last_turn = TURNING_LEFT;
       current_status = ADVANCING;
       next_status = ADVANCING;
       break;
     case TURNING_RIGHT:
       motor->motorWrite(90,255);
       delay(850);
+      last_turn = TURNING_RIGHT;
       current_status = ADVANCING;
       next_status = ADVANCING;
       break;
     case U_TURNING:
-      motor->motorWrite(150,-150);
-      delay(790);
+      //base on the last direction of turning to determine the direction of U-turn to avoid hitting the edge of map
+      if(last_turn == TURNING_LEFT){
+        last_turn = TURNING_RIGHT;
+        motor->motorWrite(255,-255);
+        delay(500);
+      }
+      else{
+        last_turn = TURNING_LEFT;
+        motor->motorWrite(-255,255);
+        delay(550);
+      }
       current_status = ADVANCING;
       next_status = ADVANCING;
       break;
@@ -223,10 +237,3 @@ void loop(){
   }
   
 }
-
-
-
-
-
-
-
